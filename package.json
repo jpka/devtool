@@ -22,9 +22,12 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "compile-panel": "browserify src/panel.js -t babelify --outfile dist/panel.js",
+    "compile-panel-watch": "watchify src/panel.js -t babelify --outfile dist/panel.js",
     "compile-graph-serializer": "browserify src/graphSerializer.js -t babelify --outfile dist/graphSerializer.js",
+    "compile-graph-serializer-watch": "watchify src/graphSerializer.js -t babelify --outfile dist/graphSerializer.js",
     "copy-ready-src": "cp src/background.js src/contentScript.js src/launcher.html src/launcher.js src/manifest.json src/mermaid.css src/panel.html src/128.png dist/",
     "dist": "mkdirp dist && npm install && npm run compile-panel && npm run compile-graph-serializer && npm run copy-ready-src",
-    "zip": "zip cyclejs-devtool.zip dist/*"
+    "zip": "zip cyclejs-devtool.zip dist/*",
+    "develop": "npm run compile-panel-watch & npm run compile-graph-serializer-watch"
   }
 }

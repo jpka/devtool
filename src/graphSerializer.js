@@ -47,7 +47,7 @@ function setupZapping(zapQueue, zap$) {
       node.stream.compose(delay(i*10)).addListener({
         next: ev => zap$.shamefullySendNext({id: node.id, type: 'next', value: ev}),
         error: err => zap$.shamefullySendNext({id: node.id, type: 'error', value: err}),
-        complete: () => zap$.shamefullySendNext({id: node.id, type: 'complete'}),
+        complete: () => null
       });
     });
   }, 100);
@@ -108,32 +108,44 @@ function GraphSerializer(sources) {
 
   let visualZap$ = xs.merge(rawVisualZap$, resetVisualZap$);
 
+  let zaps$ = rawVisualZap$.fold((acc, zap) => {
+    console.log(zap);
+    if (zap) acc[zap.id] = zap;
+  }, {});
+
   let finalDSL$ = xs.combine(
-    (dsl, zap) => {
+    (dsl, zaps) => {
       const NEXT_STYLE = 'fill: #6DFFB3, stroke: #00C194, stroke-width:3px;';
       const ERROR_STYLE = 'fill: #FFA382, stroke: #F53800, stroke-width:3px;';
       const COMPLETE_STYLE = 'fill: #B5B5B5, stroke: #7D7D7D, stroke-width:3px;';
       let zapStyle = '';
-      if (zap) {
-        if (zap.type === 'next') {
-          zapStyle = `\n    style ${zap.id} ${NEXT_STYLE}`;
-        } else if (zap.type === 'error') {
-          zapStyle = `\n    style ${zap.id} ${ERROR_STYLE}`;
-        } else if (zap.type === 'complete') {
-          zapStyle = `\n    style ${zap.id} ${COMPLETE_STYLE}`;
-        }
-      }
-      const dslWithZapStyle = dsl + zapStyle;
-      if (zap && zap.value) {
-        return dsl.replace(
-          new RegExp(`${zap.id}\\(_\\)`, 'g'),
-          `${zap.id}("${typeof zap.value === 'object' ? '_' : zap.value}")`
-        ) + zapStyle;
+      console.log(zaps);
+      if (zaps) {
+        for (let id in zaps) {
+          console.log(id);
+          let zap = zaps[id];
+          if (!zap) return;
+
+          if (zap.type === 'next') {
+            zapStyle = `\n    style ${zap.id} ${NEXT_STYLE}`;
+          } else if (zap.type === 'error') {
+            zapStyle = `\n    style ${zap.id} ${ERROR_STYLE}`;
+          } else if (zap.type === 'complete') {
+            zapStyle = `\n    style ${zap.id} ${COMPLETE_STYLE}`;
+          }
+
+          if (zap.value) {
+            return dsl.replace(
+              new RegExp(`${zap.id}\\(_\\)`, 'g'),
+              `${zap.id}("${zap.value.toString()}")`
+            ) + zapStyle;
+          }
+        };
       } else {
         return dsl + zapStyle;
       }
     },
-    dsl$, visualZap$
+    dsl$, zaps$
   );
 
   let sinks = {
